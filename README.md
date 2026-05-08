@@ -212,4 +212,5 @@ The T-Beam will reconnect automatically on subsequent reboots. Assign a static D
 - [MeshCore](https://github.com/meshcore-dev/MeshCore) by meshcore-dev
 - [RadioLib](https://github.com/jgromes/RadioLib)
 - [XPowersLib](https://github.com/lewisxhe/XPowersLib)
+- [WiFiManager](https://github.com/tzapu/WiFiManager) by tzapu — captive portal WiFi provisioning for ESP32
 - Hardware diagnosis via [Meshtastic](https://meshtastic.org/) to confirm SX1276 and absent AXP
