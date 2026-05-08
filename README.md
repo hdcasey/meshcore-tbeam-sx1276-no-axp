@@ -1,6 +1,11 @@
 # MeshCore Companion Radio on TTGO T-Beam SX1276 (no AXP PMU)
 
-MeshCore v1.15.0 BLE companion radio firmware, patched to run on the early TTGO T-Beam that ships **without an AXP192/AXP2101 power management IC**. This variant is often mislabelled as "T-Beam v1.1" in reseller listings but is identifiable by the absence of the AXP chip and the LoRa radio powered directly from the 3.3 V rail.
+MeshCore v1.15.0 companion radio firmware, patched to run on the early TTGO T-Beam that ships **without an AXP192/AXP2101 power management IC**. Two connection modes are supported:
+
+- **BLE** — pairs with the MeshCore companion app on Android/iOS
+- **WiFi/TCP** — connects to your LAN via WiFiManager captive portal; works with the [MeshCore Home Assistant integration](https://github.com/spmfte/hass-meshcore)
+
+This variant is often mislabelled as "T-Beam v1.1" in reseller listings but is identifiable by the absence of the AXP chip and the LoRa radio powered directly from the 3.3 V rail.
 
 | Front | Back |
 |-------|------|
@@ -44,6 +49,19 @@ MeshCore's `TBeamBoard` driver unconditionally tries to initialise an AXP2101 th
 ## Patches applied to MeshCore v1.15.0
 
 All changes are in `patches/`. Apply them on top of the upstream `meshcore-dev/MeshCore` source.
+
+### 4. `examples/companion_radio/main.cpp`
+
+Adds WiFiManager support alongside the existing BLE and hardcoded-WiFi paths. When `WIFI_MANAGER=1` is defined:
+
+1. After boot, calls `WiFiManager::autoConnect("MeshCore-TBeam")`
+2. If no credentials are saved → creates AP `MeshCore-TBeam`, portal at `192.168.4.1` (3-minute timeout then restart)
+3. Once connected → prints IP over serial and starts TCP server on port 5000
+4. Home Assistant MeshCore integration connects via TCP to `<T-Beam-IP>:5000`
+
+To reset saved WiFi credentials, uncomment `wm.resetSettings()` in `main.cpp`, flash once, then comment it out again.
+
+---
 
 ### 1. `src/helpers/esp32/TBeamBoard.cpp`
 
@@ -105,13 +123,18 @@ Requires [PlatformIO](https://platformio.org/).
 git clone https://github.com/meshcore-dev/MeshCore.git
 cd MeshCore
 
-# Apply patches
-cp patches/TBeamBoard.cpp src/helpers/esp32/TBeamBoard.cpp
-cp patches/TBeamBoard.h   src/helpers/esp32/TBeamBoard.h
-cp patches/platformio.ini variants/lilygo_tbeam_SX1276/platformio.ini
+# Clone patches alongside
+git clone https://github.com/hdcasey/meshcore-tbeam-sx1276-no-axp.git patches_repo
 
-# Build
-pio run -e Tbeam_SX1276_companion_radio_ble
+# Apply patches
+cp patches_repo/patches/TBeamBoard.cpp src/helpers/esp32/TBeamBoard.cpp
+cp patches_repo/patches/TBeamBoard.h   src/helpers/esp32/TBeamBoard.h
+cp patches_repo/patches/platformio.ini variants/lilygo_tbeam_SX1276/platformio.ini
+cp patches_repo/patches/main.cpp       examples/companion_radio/main.cpp
+
+# Build — choose one:
+pio run -e Tbeam_SX1276_companion_radio_ble   # BLE (pairs with app)
+pio run -e Tbeam_SX1276_companion_radio_wifi  # WiFi/TCP (for Home Assistant)
 ```
 
 ---
@@ -121,9 +144,12 @@ pio run -e Tbeam_SX1276_companion_radio_ble
 Use the **release bootloader** from the official MeshCore release binary — the PlatformIO default bootloader has a higher brownout threshold that resets this board at boot.
 
 ```bash
+# Set ENV to whichever build you compiled:
+ENV=Tbeam_SX1276_companion_radio_wifi   # or _ble
+
 # Extract release bootloader (from the official merged binary):
 python3 -c "
-with open('Tbeam_SX1276_companion_radio_ble-v1.15.0-merged.bin','rb') as f:
+with open('${ENV}-v1.15.0-merged.bin','rb') as f:
     f.seek(0x1000); bootloader = f.read(0x7000)
 open('release_bootloader.bin','wb').write(bootloader)
 "
@@ -132,8 +158,8 @@ open('release_bootloader.bin','wb').write(bootloader)
 esptool.py --port /dev/ttyUSB0 --baud 460800 \
   write_flash --flash_mode dio --flash_freq 40m \
   0x1000  release_bootloader.bin \
-  0x8000  .pio/build/Tbeam_SX1276_companion_radio_ble/partitions.bin \
-  0x10000 .pio/build/Tbeam_SX1276_companion_radio_ble/firmware.bin
+  0x8000  .pio/build/${ENV}/partitions.bin \
+  0x10000 .pio/build/${ENV}/firmware.bin
 ```
 
 > On macOS the port is typically `/dev/tty.usbserial-XXXXXXXX`.
@@ -142,9 +168,21 @@ esptool.py --port /dev/ttyUSB0 --baud 460800 \
 
 ## Connect to the mesh
 
-This firmware runs as a **BLE companion radio** — it advertises over Bluetooth and connects to any MeshCore-compatible host (phone, computer, or dedicated controller) running the [MeshCore companion app](https://github.com/meshcore-dev/meshcore-flutter).
+### BLE mode
 
-Set node name and region (`EU_868` for 868 MHz) via the companion app on first boot.
+Advertises over Bluetooth — pairs with the [MeshCore companion app](https://github.com/meshcore-dev/meshcore-flutter) on Android/iOS. Set node name and region (`EU_868` for 868 MHz) via the app on first boot.
+
+### WiFi/TCP mode (Home Assistant)
+
+On first boot the T-Beam creates a WiFi access point named **`MeshCore-TBeam`**:
+
+1. Connect your phone to `MeshCore-TBeam`
+2. A captive portal opens at `192.168.4.1` — enter your home WiFi SSID and password
+3. The T-Beam saves the credentials, reboots, and connects to your network
+4. Open a serial monitor (`pio device monitor`) to see the assigned IP address
+5. In Home Assistant → **Settings → Devices & Services → Add Integration → MeshCore** → choose **TCP** → enter the IP and port `5000`
+
+The T-Beam will reconnect automatically on subsequent reboots. Assign a static DHCP lease in your router to keep the IP stable.
 
 ---
 
