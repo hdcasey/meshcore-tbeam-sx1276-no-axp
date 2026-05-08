@@ -140,19 +140,11 @@ esptool.py --port /dev/ttyUSB0 --baud 460800 \
 
 ---
 
-## Connect to Home Assistant
+## Connect to the mesh
 
-This firmware runs as a **BLE companion radio** — it advertises over Bluetooth and bridges your Home Assistant instance to the MeshCore mesh.
+This firmware runs as a **BLE companion radio** — it advertises over Bluetooth and connects to any MeshCore-compatible host (phone, computer, or dedicated controller) running the [MeshCore companion app](https://github.com/meshcore-dev/meshcore-flutter).
 
-### Requirements
-- [meshcore-ha](https://github.com/meshcore-dev/meshcore-ha) custom integration (install via HACS)
-- HA host with Bluetooth (HA Green has it built-in)
-
-### Steps
-
-1. **Install integration**: HACS → Integrations → search *MeshCore* → Download → restart HA
-2. **Add device**: Settings → Devices & Services → Add Integration → MeshCore → Bluetooth
-3. **First-time config**: use the [MeshCore companion app](https://github.com/meshcore-dev/meshcore-flutter) to set node name and region (`EU_868` for 868 MHz / Belgium)
+Set node name and region (`EU_868` for 868 MHz) via the companion app on first boot.
 
 ---
 
