@@ -1,0 +1,8 @@
+# Partition table for WiFi companion radio build (no OTA)
+# App:    0x10000, size 1.5 MB  (firmware is ~1.14 MB, leaves headroom)
+# SPIFFS: 0x1A0000, size 2.375 MB  (maximum remaining space on 4 MB flash)
+# Name,   Type, SubType, Offset,   Size,     Flags
+nvs,      data, nvs,     0x9000,   0x5000,
+otadata,  data, ota,     0xe000,   0x2000,
+app0,     app,  ota_0,   0x10000,  0x190000,
+spiffs,   data, spiffs,  0x1A0000, 0x260000,
