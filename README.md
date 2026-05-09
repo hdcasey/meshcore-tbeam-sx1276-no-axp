@@ -127,10 +127,11 @@ cd MeshCore
 git clone https://github.com/hdcasey/meshcore-tbeam-sx1276-no-axp.git patches_repo
 
 # Apply patches
-cp patches_repo/patches/TBeamBoard.cpp src/helpers/esp32/TBeamBoard.cpp
-cp patches_repo/patches/TBeamBoard.h   src/helpers/esp32/TBeamBoard.h
-cp patches_repo/patches/platformio.ini variants/lilygo_tbeam_SX1276/platformio.ini
-cp patches_repo/patches/main.cpp       examples/companion_radio/main.cpp
+cp patches_repo/patches/TBeamBoard.cpp      src/helpers/esp32/TBeamBoard.cpp
+cp patches_repo/patches/TBeamBoard.h        src/helpers/esp32/TBeamBoard.h
+cp patches_repo/patches/platformio.ini      variants/lilygo_tbeam_SX1276/platformio.ini
+cp patches_repo/patches/main.cpp            examples/companion_radio/main.cpp
+cp patches_repo/patches/partitions_wifi.csv partitions_wifi.csv
 
 # Build — choose one:
 pio run -e Tbeam_SX1276_companion_radio_ble   # BLE (pairs with app)
